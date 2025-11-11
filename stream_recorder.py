@@ -70,13 +70,15 @@ class YouTubeStreamRecorder:
             '-f', 'segment',  # Output format là segment
             '-segment_time', str(self.segment_duration),  # Độ dài mỗi segment
             '-segment_format', 'mp4',
+            '-segment_wrap', '0',  # Không giới hạn số segment, không ghi đè
             '-reset_timestamps', '1',  # Reset timestamp cho mỗi segment
-            '-strftime', '1',  # Enable strftime trong tên file
             output_pattern
         ]
         
         print(f"\n🔴 Đang ghi stream...")
         print(f"Nhấn Ctrl+C để dừng\n")
+        print(f"🔧 Debug: FFmpeg command:")
+        print(f"   {' '.join(ffmpeg_cmd)}\n")
         
         try:
             # Chạy ffmpeg
@@ -89,11 +91,21 @@ class YouTubeStreamRecorder:
             
             # Monitor output
             segment_count = 0
+            last_output_time = time.time()
+            
             for line in process.stderr:
                 # FFmpeg output đi vào stderr
+                print(f"[FFmpeg] {line.strip()}")  # Show all ffmpeg output
+                
                 if 'segment:' in line.lower() or 'Opening' in line:
                     segment_count += 1
                     print(f"✓ Đã tạo segment #{segment_count}")
+                
+                # Check for errors
+                if 'error' in line.lower() or 'failed' in line.lower():
+                    print(f"⚠️  Phát hiện lỗi: {line.strip()}")
+                
+                last_output_time = time.time()
                     
             process.wait()
             
