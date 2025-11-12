@@ -33,7 +33,25 @@ class GeminiSRTGenerator:
             )
         
         self.client = genai.Client(api_key=api_key)
-        self.model = 'models/gemini-2.5-flash'
+        self.model = 'gemini-flash-latest'
+        
+        # System instruction cho việc tạo SRT
+        self.system_instruction = """Bạn là chuyên gia tạo phụ đề SRT chuyên nghiệp.
+
+Nhiệm vụ của bạn:
+1. Phân tích video và transcribe toàn bộ nội dung âm thanh/lời nói
+2. Tạo file phụ đề SRT chuẩn với timestamps chính xác
+3. Chia phụ đề thành các đoạn ngắn, dễ đọc (1-2 câu, tối đa 5 giây mỗi đoạn)
+4. Nếu không có lời nói, mô tả hành động/sự kiện quan trọng trong video
+5. Sử dụng ngôn ngữ được yêu cầu
+
+Định dạng SRT chuẩn:
+- Số thứ tự (bắt đầu từ 1)
+- Timestamp: HH:MM:SS,mmm --> HH:MM:SS,mmm
+- Nội dung phụ đề (1-2 dòng)
+- Dòng trống giữa các đoạn
+
+CHỈ trả về nội dung SRT thuần túy, KHÔNG thêm markdown, giải thích hay văn bản khác."""
     
     def generate_srt_from_video(self, video_path, output_srt_path=None, language='vi'):
         """
@@ -70,32 +88,43 @@ class GeminiSRTGenerator:
             'en': 'English'
         }.get(language, 'tiếng Việt')
         
-        prompt = f"""Hãy phân tích video này và tạo file phụ đề SRT hoàn chỉnh bằng {lang_instruction}.
-
-Yêu cầu:
-1. Transcribe toàn bộ nội dung âm thanh/lời nói trong video
-2. Chia thành các đoạn phụ đề ngắn (mỗi đoạn 1-2 câu, tối đa 5 giây)
-3. Đánh số thứ tự từ 1
-4. Định dạng timestamp chính xác: HH:MM:SS,mmm --> HH:MM:SS,mmm
-5. Nếu không có lời nói, hãy mô tả hành động/sự kiện quan trọng trong video
-
-Định dạng SRT chuẩn:
-1
-00:00:00,000 --> 00:00:05,000
-Dòng phụ đề đầu tiên
-
-2
-00:00:05,000 --> 00:00:10,000
-Dòng phụ đề thứ hai
-
-CHỈ trả về nội dung SRT, không thêm giải thích hay markdown."""
+        prompt = f"Hãy phân tích video này và tạo file phụ đề SRT hoàn chỉnh bằng {lang_instruction}."
 
         print(f"🤖 Đang tạo phụ đề với Gemini...")
+        
+        # Tạo contents
+        contents = [
+            types.Content(
+                role="user",
+                parts=[
+                    types.Part.from_uri(
+                        file_uri=myfile.uri,
+                        mime_type=myfile.mime_type
+                    ),
+                    types.Part.from_text(text=prompt)
+                ],
+            ),
+        ]
+        
+        # Cấu hình generate content
+        generate_content_config = types.GenerateContentConfig(
+            temperature=0.7,
+            thinking_config=types.ThinkingConfig(
+                thinking_budget=-1,
+            ),
+            image_config=types.ImageConfig(
+                image_size="1K",
+            ),
+            system_instruction=[
+                types.Part.from_text(text=self.system_instruction),
+            ],
+        )
         
         # Gọi Gemini API
         response = self.client.models.generate_content(
             model=self.model,
-            contents=[myfile, prompt]
+            contents=contents,
+            config=generate_content_config,
         )
         
         srt_content = response.text.strip()
