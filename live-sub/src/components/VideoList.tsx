@@ -79,58 +79,73 @@ export default function VideoList() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-12">
-        <Loader2 className="w-8 h-8 animate-spin text-white" />
+      <div className="flex items-center justify-center p-20">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-white">Video đã ghi</CardTitle>
-        <CardDescription className="text-slate-400">
-          {videos.length} video
+        <CardTitle>Video đã ghi</CardTitle>
+        <CardDescription>
+          Tổng cộng {videos.length} video trong thư viện
         </CardDescription>
       </CardHeader>
+
       <CardContent>
         {videos.length === 0 ? (
-          <p className="text-slate-400 text-center py-8">
-            Chưa có video nào. Bắt đầu ghi stream để tạo video.
-          </p>
+          <div className="text-center py-16 space-y-4">
+            <FileVideo className="w-16 h-16 mx-auto text-muted-foreground opacity-50" />
+            <div className="space-y-2">
+              <p className="text-lg font-semibold text-muted-foreground">
+                Chưa có video nào
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Bắt đầu ghi stream để tạo video đầu tiên
+              </p>
+            </div>
+          </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {videos.map((video) => (
               <div
                 key={video.path}
-                className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-700"
+                className="flex items-center justify-between p-6 bg-secondary rounded-xl border-2 border-border hover:border-primary transition-colors"
               >
-                <div className="flex items-center gap-3 flex-1">
-                  <FileVideo className="w-5 h-5 text-blue-400" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-medium truncate">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className="flex-shrink-0 w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center border-2 border-primary/20">
+                    <FileVideo className="w-6 h-6 text-primary" />
+                  </div>
+
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <p className="font-semibold text-foreground truncate text-base">
                       {video.name}
                     </p>
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-muted-foreground font-medium">
                       {formatSize(video.size)} • {formatDate(video.created_at)}
                     </p>
                   </div>
                 </div>
 
                 <Button
-                  size="sm"
+                  size="lg"
                   onClick={() => handleGenerateSRT(video.path)}
                   disabled={processingTasks.has(video.path)}
-                  className="bg-purple-600 hover:bg-purple-700"
+                  variant={
+                    processingTasks.has(video.path) ? "secondary" : "default"
+                  }
+                  className="ml-4"
                 >
                   {processingTasks.has(video.path) ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="w-5 h-5 animate-spin" />
                       Đang xử lý...
                     </>
                   ) : (
                     <>
-                      <Subtitles className="w-4 h-4 mr-2" />
+                      <Subtitles className="w-5 h-5" />
                       Tạo phụ đề
                     </>
                   )}

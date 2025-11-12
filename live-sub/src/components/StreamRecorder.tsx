@@ -88,78 +88,92 @@ export default function StreamRecorder({ backendOnline }: StreamRecorderProps) {
   };
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-white">Ghi Stream YouTube</CardTitle>
-        <CardDescription className="text-slate-400">
-          Nhập link livestream để bắt đầu ghi và tự động tạo phụ đề
+        <CardTitle>Ghi Stream YouTube</CardTitle>
+        <CardDescription>
+          Nhập link livestream để bắt đầu ghi và tự động tạo phụ đề với AI
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+
+      <CardContent>
         {error && (
-          <Alert className="bg-red-500/20 border-red-500">
-            <AlertDescription className="text-red-200">
+          <Alert className="bg-destructive/10 border-2 border-destructive mb-6">
+            <AlertDescription className="text-destructive font-medium">
               {error}
             </AlertDescription>
           </Alert>
         )}
 
-        <div className="space-y-2">
-          <Label htmlFor="url" className="text-white">
-            URL Stream
-          </Label>
-          <Input
-            id="url"
-            type="url"
-            placeholder="https://www.youtube.com/watch?v=..."
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            disabled={isRecording || !backendOnline}
-            className="bg-slate-900/50 border-slate-600 text-white"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="duration" className="text-white">
-            Độ dài mỗi segment (giây)
-          </Label>
-          <Input
-            id="duration"
-            type="number"
-            value={segmentDuration}
-            onChange={(e) => setSegmentDuration(Number(e.target.value))}
-            disabled={isRecording || !backendOnline}
-            className="bg-slate-900/50 border-slate-600 text-white"
-          />
-          <p className="text-sm text-slate-400">
-            {segmentDuration} giây = {Math.floor(segmentDuration / 60)} phút{" "}
-            {segmentDuration % 60} giây
-          </p>
-        </div>
-
-        {status && (
-          <div className="flex items-center gap-2 text-blue-400">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span>{status}</span>
+        <div className="space-y-6">
+          {/* URL Input */}
+          <div className="space-y-3">
+            <Label htmlFor="url" className="text-base font-semibold">
+              URL Stream
+            </Label>
+            <Input
+              id="url"
+              type="url"
+              placeholder="https://www.youtube.com/watch?v=..."
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              disabled={isRecording || !backendOnline}
+              className="h-12 text-base border-2"
+            />
           </div>
-        )}
 
-        <div className="flex gap-2">
-          {!isRecording ? (
-            <Button
-              onClick={handleStart}
-              disabled={!backendOnline}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <Play className="w-4 h-4 mr-2" />
-              Bắt đầu ghi
-            </Button>
-          ) : (
-            <Button onClick={handleStop} variant="destructive">
-              <Square className="w-4 h-4 mr-2" />
-              Dừng ghi
-            </Button>
+          {/* Duration Input */}
+          <div className="space-y-3">
+            <Label htmlFor="duration" className="text-base font-semibold">
+              Độ dài mỗi segment
+            </Label>
+            <Input
+              id="duration"
+              type="number"
+              value={segmentDuration}
+              onChange={(e) => setSegmentDuration(Number(e.target.value))}
+              disabled={isRecording || !backendOnline}
+              className="h-12 text-base border-2"
+            />
+            <p className="text-sm text-muted-foreground font-medium">
+              {segmentDuration} giây = {Math.floor(segmentDuration / 60)} phút{" "}
+              {segmentDuration % 60} giây
+            </p>
+          </div>
+
+          {/* Status Display */}
+          {status && (
+            <div className="flex items-center gap-3 px-4 py-3 bg-primary/10 rounded-xl border-2 border-primary">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <span className="font-semibold text-primary">{status}</span>
+            </div>
           )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-4 pt-4">
+            {!isRecording ? (
+              <Button
+                onClick={handleStart}
+                disabled={!backendOnline}
+                variant="success"
+                size="lg"
+                className="flex-1"
+              >
+                <Play className="w-5 h-5" />
+                Bắt đầu ghi
+              </Button>
+            ) : (
+              <Button
+                onClick={handleStop}
+                variant="destructive"
+                size="lg"
+                className="flex-1"
+              >
+                <Square className="w-5 h-5" />
+                Dừng ghi
+              </Button>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

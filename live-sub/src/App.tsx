@@ -26,46 +26,69 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="container mx-auto p-6">
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            🎬 Live Stream Subtitle System
-          </h1>
-          <p className="text-slate-300">
-            Tự động ghi stream, tạo phụ đề và dịch sang tiếng Việt
-          </p>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-8 py-12">
+        {/* Header Section */}
+        <header className="mb-12 space-y-6">
+          <div className="space-y-3">
+            <h1 className="text-5xl font-bold text-foreground tracking-tight">
+              Live Stream Subtitle System
+            </h1>
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
+              Tự động ghi stream, tạo phụ đề và dịch sang tiếng Việt với công
+              nghệ AI
+            </p>
+          </div>
 
-          {backendStatus === "offline" && (
-            <Alert className="mt-4 bg-red-500/20 border-red-500">
-              <AlertDescription className="text-red-200">
-                ⚠️ Backend offline. Chạy:{" "}
-                <code className="bg-black/30 px-2 py-1 rounded">
-                  cd backend && python main.py
-                </code>
-              </AlertDescription>
-            </Alert>
-          )}
+          {/* Status Indicator */}
+          <div className="flex items-center gap-4">
+            {backendStatus === "checking" && (
+              <div className="flex items-center gap-3 px-4 py-3 bg-muted rounded-xl border-2 border-border">
+                <div className="w-2.5 h-2.5 bg-muted-foreground rounded-full animate-pulse" />
+                <span className="text-sm font-medium text-muted-foreground">
+                  Đang kiểm tra backend...
+                </span>
+              </div>
+            )}
 
-          {backendStatus === "online" && (
-            <div className="mt-4 flex items-center gap-2 text-green-400">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-sm">Backend đang chạy</span>
-            </div>
-          )}
+            {backendStatus === "offline" && (
+              <Alert className="bg-destructive/10 border-2 border-destructive">
+                <AlertDescription className="text-destructive-foreground font-medium">
+                  ⚠️ Backend offline. Chạy:{" "}
+                  <code className="bg-destructive/20 px-3 py-1.5 rounded-lg font-mono text-sm">
+                    cd backend && python main.py
+                  </code>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {backendStatus === "online" && (
+              <div className="flex items-center gap-3 px-4 py-3 bg-success/10 rounded-xl border-2 border-success">
+                <div className="w-2.5 h-2.5 bg-success rounded-full animate-pulse" />
+                <span className="text-sm font-semibold text-success">
+                  Backend đang hoạt động
+                </span>
+              </div>
+            )}
+          </div>
         </header>
 
-        <Tabs defaultValue="record" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-slate-800/50">
-            <TabsTrigger value="record">📹 Ghi Stream</TabsTrigger>
-            <TabsTrigger value="videos">📁 Video</TabsTrigger>
+        {/* Main Content */}
+        <Tabs defaultValue="record" className="w-full space-y-8">
+          <TabsList className="w-full max-w-md">
+            <TabsTrigger value="record" className="flex-1">
+              <span className="text-base">📹 Ghi Stream</span>
+            </TabsTrigger>
+            <TabsTrigger value="videos" className="flex-1">
+              <span className="text-base">📁 Quản lý Video</span>
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="record" className="mt-6">
+          <TabsContent value="record">
             <StreamRecorder backendOnline={backendStatus === "online"} />
           </TabsContent>
 
-          <TabsContent value="videos" className="mt-6">
+          <TabsContent value="videos">
             <VideoList />
           </TabsContent>
         </Tabs>
