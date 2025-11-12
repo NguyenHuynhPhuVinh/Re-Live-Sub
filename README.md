@@ -1,16 +1,14 @@
-# YouTube Stream Recorder - Ghi Stream Thành Segments 5 Phút
+# YouTube Stream Recorder & SRT Generator
+
+Công cụ ghi stream YouTube và tự động tạo phụ đề SRT bằng Gemini AI.
+
+## Tính năng
+
+1. **Stream Recorder** (`stream_recorder.py`): Ghi YouTube livestream thành các đoạn video 5 phút
+2. **SRT Generator** (`generate_srt.py`): Tạo file phụ đề SRT từ video bằng Gemini API
+3. **Subtitle Merger** (`merge_subtitle.py`): Ghép phụ đề SRT vào video bằng FFmpeg
 
 ## Cài đặt
-
-### 1. Cài đặt FFmpeg
-
-**Windows:**
-
-- Download từ: https://ffmpeg.org/download.html
-- Hoặc dùng chocolatey: `choco install ffmpeg`
-- Thêm ffmpeg vào PATH
-
-### 2. Cài đặt Python dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -18,51 +16,155 @@ pip install -r requirements.txt
 
 ## Sử dụng
 
-### Cách 1: Chạy trực tiếp
+### 1. Ghi Stream YouTube
 
 ```python
 python stream_recorder.py
 ```
 
-(Nhớ sửa URL trong file `main()`)
-
-### Cách 2: Import vào code của bạn
+Hoặc tùy chỉnh:
 
 ```python
 from stream_recorder import YouTubeStreamRecorder
 
 recorder = YouTubeStreamRecorder(
-    output_dir="my_recordings",
+    output_dir="recordings",
     segment_duration=300  # 5 phút
 )
 
 recorder.record_stream(
-    youtube_url="https://www.youtube.com/watch?v=...",
+    "https://www.youtube.com/watch?v=VIDEO_ID",
     stream_name="my_stream"
 )
 ```
 
-## Output
+### 2. Tạo Phụ Đề SRT
 
-Video sẽ được lưu vào thư mục `recordings/` với format:
+**Bước 1: Đặt API Key**
 
-- `streamname_001.mp4` (0-5 phút)
-- `streamname_002.mp4` (5-10 phút)
-- `streamname_003.mp4` (10-15 phút)
-- ...
+Lấy API key tại: https://aistudio.google.com/apikey
+
+Tạo file `.env` trong thư mục project:
+
+```bash
+# Copy file mẫu
+copy .env.example .env
+
+# Sửa file .env và thêm API key của bạn
+GEMINI_API_KEY=your_api_key_here
+```
+
+**Bước 2: Chạy script**
+
+```bash
+python generate_srt.py
+```
+
+Chọn chế độ:
+
+- **Chế độ 1**: Tạo SRT cho 1 video
+- **Chế độ 2**: Tạo SRT cho tất cả video trong thư mục
+
+**Sử dụng trong code:**
+
+```python
+from generate_srt import GeminiSRTGenerator
+
+generator = GeminiSRTGenerator()
+
+# Tạo SRT cho 1 video
+generator.generate_srt_from_video(
+    "recordings/test_stream_000.mp4",
+    language='vi'  # hoặc 'en'
+)
+
+# Tạo SRT cho tất cả video
+generator.batch_generate_srt(
+    video_dir="recordings",
+    pattern="*.mp4",
+    language='vi'
+)
+```
+
+### 3. Ghép Phụ Đề Vào Video
+
+```bash
+python merge_subtitle.py
+```
+
+Chọn chế độ:
+
+- **Chế độ 1**: Ghép phụ đề cho 1 video
+- **Chế độ 2**: Ghép phụ đề cho tất cả video trong thư mục
+
+**Kiểu phụ đề:**
+
+- **Burn-in**: Phụ đề cố định, không thể tắt (khuyến nghị cho upload)
+- **Embed**: Phụ đề có thể bật/tắt trong trình phát
+
+**Sử dụng trong code:**
+
+```python
+from merge_subtitle import SubtitleMerger
+
+merger = SubtitleMerger()
+
+# Ghép phụ đề cho 1 video (burn-in)
+merger.merge_subtitle(
+    "recordings/test_stream_000.mp4",
+    burn_in=True
+)
+
+# Ghép phụ đề với style tùy chỉnh
+merger.merge_subtitle(
+    "recordings/test_stream_000.mp4",
+    subtitle_style={
+        'font': 'Arial',
+        'size': 28,
+        'color': '&H00FFFFFF',  # Trắng
+        'outline': '&H00000000',  # Viền đen
+        'bold': True
+    },
+    burn_in=True
+)
+
+# Ghép phụ đề cho tất cả video
+merger.batch_merge(
+    video_dir="recordings",
+    pattern="*.mp4",
+    burn_in=True
+)
+```
+
+## Định dạng SRT
+
+File SRT được tạo theo chuẩn:
+
+```
+1
+00:00:00,000 --> 00:00:05,000
+Dòng phụ đề đầu tiên
+
+2
+00:00:05,000 --> 00:00:10,000
+Dòng phụ đề thứ hai
+```
 
 ## Lưu ý
 
-- Stream phải đang LIVE khi chạy
-- Nhấn Ctrl+C để dừng ghi
-- Đoạn cuối cùng có thể < 5 phút nếu stream kết thúc
-- Video dùng codec gốc (không re-encode) nên rất nhanh
+- Video dài hơn 1 phút nên tải lên qua File API (script đã tự động xử lý)
+- Gemini hỗ trợ video tối đa 2 giờ (cửa sổ ngữ cảnh 2M)
+- Mỗi giây video tiêu tốn ~300 tokens
+- Hỗ trợ định dạng: MP4, MPEG, MOV, AVI, FLV, MPG, WEBM, WMV, 3GPP
 
-## Bước tiếp theo
+## Yêu cầu
 
-Sau khi có các segments 5 phút, bạn có thể:
+- Python 3.7+
+- FFmpeg (cho stream recorder)
+- yt-dlp
+- google-genai
+- Gemini API key
 
-1. Gửi từng file cho AI để dịch (Whisper API)
-2. Tạo file SRT phụ đề
-3. Gắn phụ đề vào video
-4. Phát lại video đã có phụ đề
+## License
+
+MIT
