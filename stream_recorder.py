@@ -12,15 +12,17 @@ from pathlib import Path
 
 
 class YouTubeStreamRecorder:
-    def __init__(self, output_dir="recordings", segment_duration=300):
+    def __init__(self, output_dir="recordings", segment_duration=300, enhance_quality=False):
         """
         Args:
             output_dir: Thư mục lưu video
             segment_duration: Độ dài mỗi segment (giây), mặc định 300s = 5 phút
+            enhance_quality: True = re-encode với bitrate cao hơn (chậm hơn, file lớn hơn)
         """
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
         self.segment_duration = segment_duration
+        self.enhance_quality = enhance_quality
         
     def get_stream_url(self, youtube_url):
         """Lấy direct stream URL từ YouTube"""
@@ -66,17 +68,52 @@ class YouTubeStreamRecorder:
         output_pattern = str(self.output_dir / f"{stream_name}_%03d.mp4")
         
         # FFmpeg command để ghi và chia segments
-        ffmpeg_cmd = [
-            'ffmpeg',
-            '-i', stream_url,
-            '-c', 'copy',  # Copy codec, không re-encode (nhanh hơn)
-            '-f', 'segment',  # Output format là segment
-            '-segment_time', str(self.segment_duration),  # Độ dài mỗi segment
-            '-segment_format', 'mp4',
-            '-segment_wrap', '0',  # Không giới hạn số segment, không ghi đè
-            '-reset_timestamps', '1',  # Reset timestamp cho mỗi segment
-            output_pattern
-        ]
+        if self.enhance_quality:
+            # Re-encode với bitrate cao và chất lượng tốt
+            print(f"⚡ Chế độ: Enhance Quality (re-encode với bitrate cao)")
+            print(f"   ⚠️  Lưu ý: Chậm hơn, file lớn hơn, không tạo thêm chi tiết")
+            
+            ffmpeg_cmd = [
+                'ffmpeg',
+                '-i', stream_url,
+                # Video encoding
+                '-c:v', 'libx264',  # H.264 encoder
+                '-preset', 'slow',  # Preset chậm = chất lượng tốt hơn
+                '-crf', '18',  # Chất lượng cao (18 = visually lossless)
+                '-b:v', '10M',  # Target bitrate 10 Mbps (cao hơn nhiều so với 3.3 Mbps)
+                '-maxrate', '12M',  # Max bitrate
+                '-bufsize', '20M',  # Buffer size
+                '-pix_fmt', 'yuv420p',  # Pixel format tương thích
+                '-profile:v', 'high',  # H.264 profile cao
+                '-level', '4.2',  # H.264 level
+                # Audio encoding
+                '-c:a', 'aac',  # AAC encoder
+                '-b:a', '192k',  # Audio bitrate 192 kbps (cao hơn)
+                '-ar', '48000',  # Sample rate 48kHz
+                # Segment settings
+                '-f', 'segment',
+                '-segment_time', str(self.segment_duration),
+                '-segment_format', 'mp4',
+                '-segment_wrap', '0',
+                '-reset_timestamps', '1',
+                # Output
+                output_pattern
+            ]
+        else:
+            # Copy stream trực tiếp (nhanh, giữ nguyên chất lượng gốc)
+            print(f"⚡ Chế độ: Copy Stream (nhanh, giữ nguyên chất lượng gốc)")
+            
+            ffmpeg_cmd = [
+                'ffmpeg',
+                '-i', stream_url,
+                '-c', 'copy',  # Copy codec, không re-encode
+                '-f', 'segment',
+                '-segment_time', str(self.segment_duration),
+                '-segment_format', 'mp4',
+                '-segment_wrap', '0',
+                '-reset_timestamps', '1',
+                output_pattern
+            ]
         
         print(f"\n🔴 Đang ghi stream...")
         print(f"Nhấn Ctrl+C để dừng\n")
@@ -140,17 +177,31 @@ class YouTubeStreamRecorder:
 
 
 def main():
+    # Hỏi user có muốn enhance quality không
+    print("Chọn chế độ ghi:")
+    print("1. Copy Stream (nhanh, giữ nguyên chất lượng gốc)")
+    print("2. Enhance Quality (chậm hơn, re-encode với bitrate 10 Mbps)")
+    print("\n💡 Lưu ý: Enhance không tạo thêm chi tiết, chỉ làm mượt hơn")
+    
+    choice = input("\nNhập lựa chọn (1 hoặc 2, mặc định 1): ").strip() or '1'
+    enhance = (choice == '2')
+    
     # Ví dụ sử dụng
     recorder = YouTubeStreamRecorder(
         output_dir="recordings",
-        segment_duration=300  # 5 phút
+        segment_duration=300,  # 5 phút
+        enhance_quality=enhance
     )
     
-    # Thay URL này bằng YouTube livestream của bạn
-    youtube_url = "https://www.youtube.com/watch?v=VXciXPHJvYk"
+    # Nhập URL
+    youtube_url = input("\nNhập YouTube livestream URL: ").strip()
+    if not youtube_url:
+        youtube_url = "https://www.youtube.com/watch?v=VXciXPHJvYk"  # Default
+    
+    stream_name = input("Tên stream (Enter để dùng timestamp): ").strip() or None
     
     # Bắt đầu ghi
-    recorder.record_stream(youtube_url, stream_name="test_stream")
+    recorder.record_stream(youtube_url, stream_name=stream_name)
 
 
 if __name__ == "__main__":

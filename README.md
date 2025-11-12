@@ -37,6 +37,17 @@ recorder.record_stream(
     "https://www.youtube.com/watch?v=VIDEO_ID",
     stream_name="my_stream"
 )
+
+# Hoặc với enhance quality (re-encode bitrate cao hơn)
+recorder_hq = YouTubeStreamRecorder(
+    output_dir="recordings",
+    segment_duration=300,
+    enhance_quality=True  # Re-encode với 10 Mbps
+)
+recorder_hq.record_stream(
+    "https://www.youtube.com/watch?v=VIDEO_ID",
+    stream_name="my_stream_hq"
+)
 ```
 
 ### 2. Tạo Phụ Đề SRT
