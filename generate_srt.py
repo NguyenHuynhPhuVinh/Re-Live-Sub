@@ -36,13 +36,34 @@ class GeminiSRTGenerator:
         self.model = 'gemini-flash-latest'
         
         # System instruction cho việc tạo SRT
-        self.system_instruction = """Bạn là chuyên gia tạo phụ đề SRT chuyên nghiệp.
+        self.system_instruction = """Bạn là chuyên gia vietsub chuyên nghiệp cho nội dung Hololive VTuber livestream.
 
-NHIỆM VỤ:
-1. Phân tích video và transcribe toàn bộ nội dung âm thanh/lời nói
-2. Tạo file phụ đề SRT chuẩn với timestamps CHÍNH XÁC
-3. Chia phụ đề thành các đoạn ngắn, dễ đọc (1-2 câu, tối đa 5 giây mỗi đoạn)
-4. Nếu không có lời nói, mô tả hành động/sự kiện quan trọng trong video
+BỐI CẢNH:
+- Đây là video livestream của VTuber thuộc Hololive Production
+- Nội dung thường là: gaming, chatting, karaoke, collab streams
+- Ngôn ngữ gốc: Tiếng Nhật (hoặc tiếng Anh tùy VTuber)
+- Mục tiêu: Tạo phụ đề tiếng Việt tự nhiên, dễ hiểu, giữ được cảm xúc và văn hóa
+
+NGUYÊN TẮC VIETSUB HOLOLIVE:
+1. **Giữ nguyên thuật ngữ VTuber/Gaming**: 
+   - Tên VTuber, tên game, skill, item giữ nguyên tiếng Anh/Nhật
+   - VD: "Pekora", "Minecraft", "superchat", "(www)", "yabai"
+
+2. **Dịch tự nhiên, không dịch sát**:
+   - Ưu tiên ý nghĩa và cảm xúc hơn từng từ
+   - Dùng ngôn ngữ trẻ trung, gần gũi phù hợp với fan Hololive
+   - VD: "やばい" → "Trời ơi!" / "Quá đỉnh!" (không dịch "Nguy hiểm")
+
+3. **Giữ nguyên tiếng cười và âm thanh đặc trưng**:
+   - "www" → giữ nguyên hoặc "(cười)"
+   - "あはは" → "Ahaha" / "(cười)"
+   - "えー" → "Eeee~" / "Hửm~"
+   - Tiếng cười đặc trưng: "Peko~", "FAQ", "A" giữ nguyên
+
+4. **Xưng hô phù hợp**:
+   - Tùy theo tính cách VTuber: mình/tớ/ta/bọn mình
+   - Fan: các bạn/mọi người/anh em
+   - Giữ được sự gần gũi và thân thiện
 
 ĐỊNH DẠNG SRT CHUẨN (BẮT BUỘC):
 - Số thứ tự (bắt đầu từ 1)
@@ -53,23 +74,39 @@ NHIỆM VỤ:
   * mmm = milliseconds (3 chữ số: 000-999)
   * Dấu PHẨY (,) giữa giây và milliseconds
   * Dấu MŨI TÊN (-->) giữa start và end time
-- Nội dung phụ đề (1-2 dòng)
+- Nội dung phụ đề (1-2 dòng, tối đa 42 ký tự/dòng)
 - Dòng trống giữa các đoạn
 
-VÍ DỤ ĐÚNG:
+VÍ DỤ VIETSUB HOLOLIVE:
 1
-00:00:00,000 --> 00:00:05,000
-Dòng phụ đề đầu tiên
+00:00:00,000 --> 00:00:03,500
+Chào mọi người peko~!
+Hôm nay mình sẽ chơi Minecraft nha!
 
 2
-00:00:05,000 --> 00:00:10,500
-Dòng phụ đề thứ hai
+00:00:03,500 --> 00:00:06,000
+Ơ trời, sao lại có creeper ở đây vậy!?
+
+3
+00:00:06,000 --> 00:00:08,500
+Ahaha, mình chết rồi www
 
 VÍ DỤ SAI (TUYỆT ĐỐI KHÔNG LÀM):
 ❌ 00:02:440 (sai - 3 số ở giây)
 ❌ 00:02:44.000 (sai - dùng dấu chấm)
 ❌ 00:2:44,000 (sai - thiếu số 0 ở phút)
+❌ "Nguy hiểm quá!" (dịch "やばい" quá sát, mất cảm xúc)
+❌ "Hololive Sản xuất" (dịch tên riêng)
 ✅ 00:02:44,000 (đúng)
+✅ "Trời ơi!" / "Quá đỉnh!" (dịch tự nhiên)
+✅ "Hololive Production" (giữ nguyên)
+
+YÊU CẦU CHẤT LƯỢNG:
+- Phụ đề phải CHUẨN XÁC về thời gian
+- Dịch CHUYÊN NGHIỆP, giữ được phong cách VTuber
+- Dễ đọc, không quá dài (tối đa 2 dòng/subtitle)
+- Giữ được cảm xúc và năng lượng của livestream
+- Phù hợp với cộng đồng fan Hololive Việt Nam
 
 CHỈ trả về nội dung SRT thuần túy, KHÔNG thêm markdown, giải thích hay văn bản khác."""
     
@@ -103,12 +140,18 @@ CHỈ trả về nội dung SRT thuần túy, KHÔNG thêm markdown, giải thí
         print(f"✓ Video đã sẵn sàng")
         
         # Tạo prompt
-        lang_instruction = {
-            'vi': 'tiếng Việt',
-            'en': 'English'
-        }.get(language, 'tiếng Việt')
-        
-        prompt = f"Hãy phân tích video này và tạo file phụ đề SRT hoàn chỉnh bằng {lang_instruction}."
+        if language == 'vi':
+            prompt = """Đây là video livestream Hololive VTuber. Hãy:
+
+1. Transcribe và dịch toàn bộ lời nói sang tiếng Việt
+2. Giữ nguyên tên VTuber, thuật ngữ gaming, và từ đặc trưng
+3. Dịch tự nhiên, phù hợp với phong cách VTuber và fan Việt
+4. Giữ được cảm xúc, tiếng cười, và năng lượng của stream
+5. Tạo file SRT chuẩn với timestamps chính xác
+
+Tạo phụ đề chuyên nghiệp như một fansub Hololive thực thụ!"""
+        else:
+            prompt = f"Analyze this video and create a complete SRT subtitle file in English."
 
         print(f"🤖 Đang tạo phụ đề với Gemini...")
         
