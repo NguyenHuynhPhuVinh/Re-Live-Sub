@@ -6,7 +6,8 @@ Công cụ ghi stream YouTube và tự động tạo phụ đề SRT bằng Gemi
 
 1. **Stream Recorder** (`stream_recorder.py`): Ghi YouTube livestream thành các đoạn video 5 phút
 2. **SRT Generator** (`generate_srt.py`): Tạo file phụ đề SRT từ video bằng Gemini API
-3. **Subtitle Merger** (`merge_subtitle.py`): Ghép phụ đề SRT vào video bằng FFmpeg
+3. **SRT Validator** (`validate_srt.py`): Kiểm tra và sửa lỗi file SRT
+4. **Subtitle Merger** (`merge_subtitle.py`): Ghép phụ đề SRT vào video bằng FFmpeg
 
 ## Cài đặt
 
@@ -86,7 +87,47 @@ generator.batch_generate_srt(
 )
 ```
 
-### 3. Ghép Phụ Đề Vào Video
+### 3. Kiểm Tra File SRT
+
+```bash
+python validate_srt.py
+```
+
+Chọn chế độ:
+
+- **Chế độ 1**: Kiểm tra 1 file SRT
+- **Chế độ 2**: Kiểm tra tất cả file SRT trong thư mục
+
+**Tính năng:**
+
+- Kiểm tra định dạng timestamp (HH:MM:SS,mmm)
+- Kiểm tra số thứ tự subtitle
+- Kiểm tra logic thời gian (start < end)
+- Cảnh báo phụ đề quá dài
+- Tự động sửa lỗi (optional)
+
+**Sử dụng trong code:**
+
+```python
+from validate_srt import SRTValidator
+
+validator = SRTValidator()
+
+# Kiểm tra 1 file
+is_valid, fixed_content = validator.validate_file(
+    "recordings/test_stream_000.srt",
+    fix=True  # Tự động sửa lỗi
+)
+
+# Kiểm tra tất cả file
+validator.batch_validate(
+    directory="recordings",
+    pattern="*.srt",
+    fix=True
+)
+```
+
+### 4. Ghép Phụ Đề Vào Video
 
 ```bash
 python merge_subtitle.py
