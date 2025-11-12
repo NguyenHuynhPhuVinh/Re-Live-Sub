@@ -290,7 +290,20 @@ def main():
         print("\nLấy API key tại: https://aistudio.google.com/apikey")
         sys.exit(1)
     
-    # Cấu hình
+    # Nếu được gọi với arguments, dùng chế độ tự động
+    if len(sys.argv) > 1 and sys.argv[1] == '--auto':
+        pipeline = VideoProcessingPipeline(
+            watch_dir="recordings",
+            temp_dir="recordings/temp",
+            processed_dir="processed",
+            language='vi',
+            burn_subtitle=True,
+            stable_time=10
+        )
+        pipeline.start_watching()
+        return
+    
+    # Chế độ interactive (hỏi user)
     print("⚙️  CẤU HÌNH PIPELINE")
     print("=" * 70)
     

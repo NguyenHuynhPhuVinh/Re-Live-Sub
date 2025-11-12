@@ -320,7 +320,25 @@ class YouTubeStreamRecorder:
 
 
 def main():
-    # Hỏi user có muốn enhance quality không
+    import sys
+    
+    # Nếu được gọi với arguments, dùng chế độ tự động
+    if len(sys.argv) > 1:
+        youtube_url = sys.argv[1]
+        stream_name = sys.argv[2] if len(sys.argv) > 2 else None
+        enhance = sys.argv[3].lower() == 'true' if len(sys.argv) > 3 else False
+        
+        recorder = YouTubeStreamRecorder(
+            output_dir="recordings",
+            segment_duration=300,
+            enhance_quality=enhance,
+            use_temp_dir=True
+        )
+        
+        recorder.record_stream(youtube_url, stream_name=stream_name)
+        return
+    
+    # Chế độ interactive (hỏi user)
     print("Chọn chế độ ghi:")
     print("1. Copy Stream (nhanh, giữ nguyên chất lượng gốc)")
     print("2. Enhance Quality (chậm hơn, re-encode với bitrate 10 Mbps)")
@@ -333,7 +351,8 @@ def main():
     recorder = YouTubeStreamRecorder(
         output_dir="recordings",
         segment_duration=300,  # 5 phút
-        enhance_quality=enhance
+        enhance_quality=enhance,
+        use_temp_dir=True
     )
     
     # Nhập URL
