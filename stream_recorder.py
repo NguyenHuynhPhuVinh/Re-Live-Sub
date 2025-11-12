@@ -7,13 +7,14 @@ import subprocess
 import os
 import time
 import json
+import shutil
 from datetime import datetime
 from pathlib import Path
 
 
 class YouTubeStreamRecorder:
     def __init__(self, output_dir="recordings", segment_duration=300, enhance_quality=False, 
-                 max_retries=10, retry_delay=5):
+                 max_retries=10, retry_delay=5, use_temp_dir=True):
         """
         Args:
             output_dir: Thư mục lưu video
@@ -21,9 +22,19 @@ class YouTubeStreamRecorder:
             enhance_quality: True = re-encode với bitrate cao hơn (chậm hơn, file lớn hơn)
             max_retries: Số lần thử lại tối đa khi mất kết nối (mặc định 10)
             retry_delay: Thời gian chờ ban đầu giữa các lần retry (giây, mặc định 5)
+            use_temp_dir: True = ghi vào temp, sau đó move ra output_dir khi xong
         """
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
+        self.use_temp_dir = use_temp_dir
+        
+        # Tạo thư mục temp nếu dùng
+        if use_temp_dir:
+            self.temp_dir = self.output_dir / "temp"
+            self.temp_dir.mkdir(exist_ok=True)
+        else:
+            self.temp_dir = self.output_dir
+        
         self.segment_duration = segment_duration
         self.enhance_quality = enhance_quality
         self.max_retries = max_retries
@@ -61,7 +72,11 @@ class YouTubeStreamRecorder:
             stream_name = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         print(f"🎥 Bắt đầu ghi stream: {youtube_url}")
-        print(f"📁 Lưu vào: {self.output_dir}")
+        if self.use_temp_dir:
+            print(f"📁 Ghi vào temp: {self.temp_dir}")
+            print(f"📁 Sẽ chuyển đến: {self.output_dir}")
+        else:
+            print(f"📁 Lưu vào: {self.output_dir}")
         print(f"⏱️  Mỗi segment: {self.segment_duration}s ({self.segment_duration//60} phút)")
         print(f"🔄 Auto-reconnect: Tối đa {self.max_retries} lần thử lại")
         
@@ -102,6 +117,10 @@ class YouTubeStreamRecorder:
         if retry_count > self.max_retries:
             print(f"\n✗ Đã thử {self.max_retries} lần nhưng không thành công")
         
+        # Di chuyển file từ temp ra output_dir nếu dùng temp
+        if self.use_temp_dir:
+            self.move_from_temp_to_output(stream_name)
+        
         # Liệt kê các file đã tạo
         self.list_recordings(stream_name)
     
@@ -114,7 +133,8 @@ class YouTubeStreamRecorder:
             False nếu stream bị ngắt và cần retry
         """
         # Tìm segment number tiếp theo (để tiếp tục đánh số khi reconnect)
-        existing_files = sorted(self.output_dir.glob(f"{stream_name}_*.mp4"))
+        # Kiểm tra trong temp_dir
+        existing_files = sorted(self.temp_dir.glob(f"{stream_name}_*.mp4"))
         if existing_files:
             # Lấy số cuối cùng từ file cuối
             last_file = existing_files[-1].stem
@@ -127,7 +147,8 @@ class YouTubeStreamRecorder:
             start_number = 0
         
         # Pattern cho tên file: streamname_001.mp4, streamname_002.mp4, ...
-        output_pattern = str(self.output_dir / f"{stream_name}_%03d.mp4")
+        # Ghi vào temp_dir
+        output_pattern = str(self.temp_dir / f"{stream_name}_%03d.mp4")
         
         # FFmpeg command để ghi và chia segments
         if self.enhance_quality:
@@ -259,6 +280,28 @@ class YouTubeStreamRecorder:
             return False
         else:
             return True
+    
+    def move_from_temp_to_output(self, stream_name):
+        """Di chuyển các file từ temp sang output_dir"""
+        temp_files = sorted(self.temp_dir.glob(f"{stream_name}_*.mp4"))
+        
+        if not temp_files:
+            print(f"\n⚠️  Không có file nào trong temp để di chuyển")
+            return
+        
+        print(f"\n📦 Đang di chuyển {len(temp_files)} file từ temp...")
+        
+        moved_count = 0
+        for temp_file in temp_files:
+            try:
+                dest_file = self.output_dir / temp_file.name
+                shutil.move(str(temp_file), str(dest_file))
+                moved_count += 1
+                print(f"  ✓ {temp_file.name}")
+            except Exception as e:
+                print(f"  ✗ Lỗi di chuyển {temp_file.name}: {e}")
+        
+        print(f"✓ Đã di chuyển {moved_count}/{len(temp_files)} file")
     
     def list_recordings(self, stream_name=None):
         """Liệt kê các file đã ghi"""

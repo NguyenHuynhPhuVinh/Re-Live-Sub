@@ -8,8 +8,9 @@ Công cụ ghi stream YouTube và tự động tạo phụ đề SRT bằng Gemi
 2. **SRT Generator** (`generate_srt.py`): Tạo file phụ đề SRT từ video bằng Gemini API
 3. **SRT Validator** (`validate_srt.py`): Kiểm tra và sửa lỗi file SRT
 4. **Subtitle Merger** (`merge_subtitle.py`): Ghép phụ đề SRT vào video bằng FFmpeg
-5. **YouTube Live Streamer** (`stream_to_youtube.py`): Phát trực tiếp video lên YouTube Live
-6. **YouTube Uploader** (`upload_youtube.py`): Upload video lên YouTube (private/unlisted/public)
+5. **Auto Processing Pipeline** (`auto_process_pipeline.py`): 🆕 Tự động hóa toàn bộ quy trình
+6. **YouTube Live Streamer** (`stream_to_youtube.py`): Phát trực tiếp video lên YouTube Live
+7. **YouTube Uploader** (`upload_youtube.py`): Upload video lên YouTube (private/unlisted/public)
 
 ## Cài đặt
 
@@ -17,7 +18,70 @@ Công cụ ghi stream YouTube và tự động tạo phụ đề SRT bằng Gemi
 pip install -r requirements.txt
 ```
 
-## Sử dụng
+## 🚀 Quy Trình Tự Động (Khuyến Nghị)
+
+### Auto Processing Pipeline
+
+Pipeline tự động sẽ:
+
+1. ✅ Theo dõi thư mục `recordings` để phát hiện video mới
+2. ✅ Tự động tạo phụ đề SRT bằng Gemini
+3. ✅ Tự động gắn phụ đề vào video
+4. ✅ Di chuyển video đã xử lý vào thư mục `processed`
+
+**Cách sử dụng:**
+
+```bash
+# Bước 1: Chạy pipeline (terminal 1)
+python auto_process_pipeline.py
+
+# Bước 2: Chạy stream recorder (terminal 2)
+python stream_recorder.py
+```
+
+**Quy trình hoạt động:**
+
+```
+Stream Recorder → recordings/temp/video_001.mp4 (đang ghi)
+                ↓ (khi hoàn thành)
+              recordings/video_001.mp4
+                ↓ (pipeline phát hiện)
+              [Tạo SRT] → recordings/video_001.srt
+                ↓
+              [Gắn phụ đề] → recordings/video_001_sub.mp4
+                ↓
+              processed/video_001_sub.mp4 ✅
+              processed/video_001.srt
+              processed/original_video_001.mp4
+```
+
+**Cấu hình pipeline:**
+
+```python
+from auto_process_pipeline import VideoProcessingPipeline
+
+pipeline = VideoProcessingPipeline(
+    watch_dir="recordings",        # Thư mục chứa video hoàn chỉnh
+    temp_dir="recordings/temp",    # Thư mục video đang record
+    processed_dir="processed",     # Thư mục output
+    language='vi',                 # Ngôn ngữ phụ đề
+    burn_subtitle=True,            # Burn subtitle vào video
+    stable_time=10                 # Chờ file ổn định (giây)
+)
+
+pipeline.start_watching()
+```
+
+**Lưu ý:**
+
+- Pipeline sẽ tự động xử lý cả video có sẵn trong thư mục `recordings`
+- Video đang record sẽ ở trong `recordings/temp` và không bị xử lý
+- Khi record xong, video sẽ được di chuyển ra `recordings` và pipeline tự động xử lý
+- Nhấn Ctrl+C để dừng pipeline
+
+---
+
+## Sử Dụng Thủ Công
 
 ### 1. Ghi Stream YouTube
 
