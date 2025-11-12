@@ -6,12 +6,8 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
-import sys
-import os
 
-# Add parent directory to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from stream_recorder import YouTubeStreamRecorder
+from core.stream_recorder import YouTubeStreamRecorder
 
 class StreamService:
     def __init__(self):

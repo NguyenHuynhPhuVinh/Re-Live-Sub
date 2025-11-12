@@ -6,12 +6,9 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
-import sys
-import os
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from generate_srt import GeminiSRTGenerator
-from merge_subtitle import SubtitleMerger
+from core.generate_srt import GeminiSRTGenerator
+from core.merge_subtitle import SubtitleMerger
 
 class ProcessingService:
     def __init__(self):
