@@ -62,7 +62,7 @@ def run_pipeline():
     pipeline.start_watching()
 
 
-def run_recorder(youtube_url, segment_duration=30):
+def run_recorder(youtube_url, segment_duration=60):
     """Chạy stream recorder"""
     from stream_recorder import YouTubeStreamRecorder
     from datetime import datetime
@@ -99,8 +99,8 @@ def main():
         sys.exit(1)
     
     # Tùy chọn segment duration
-    segment_input = input("Segment duration (giây, mặc định 30 cho test): ").strip()
-    segment_duration = int(segment_input) if segment_input else 30
+    segment_input = input("Segment duration (giây, mặc định 60 cho test): ").strip()
+    segment_duration = int(segment_input) if segment_input else 60
     
     print()
     print("=" * 70)
