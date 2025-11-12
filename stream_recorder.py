@@ -242,6 +242,10 @@ class YouTubeStreamRecorder:
                     segment_count += 1
                     print(f"✓ Đã tạo segment #{segment_count}")
                     last_output_time = time.time()
+                    
+                    # Di chuyển segment vừa hoàn thành từ temp ra output (nếu dùng temp)
+                    if self.use_temp_dir and segment_count > 0:
+                        self._move_completed_segment(stream_name, segment_count - 1)
                 
                 # Check for connection errors
                 if any(err in line.lower() for err in ['connection', 'timeout', 'i/o error', 'server returned']):
@@ -281,15 +285,31 @@ class YouTubeStreamRecorder:
         else:
             return True
     
+    def _move_completed_segment(self, stream_name, segment_number):
+        """Di chuyển một segment đã hoàn thành từ temp ra output"""
+        segment_file = self.temp_dir / f"{stream_name}_{segment_number:03d}.mp4"
+        
+        if not segment_file.exists():
+            return
+        
+        # Đợi file ổn định (1 giây)
+        time.sleep(1)
+        
+        try:
+            dest_file = self.output_dir / segment_file.name
+            shutil.move(str(segment_file), str(dest_file))
+            print(f"  📦 Di chuyển: {segment_file.name} → recordings/")
+        except Exception as e:
+            print(f"  ⚠️  Lỗi di chuyển {segment_file.name}: {e}")
+    
     def move_from_temp_to_output(self, stream_name):
-        """Di chuyển các file từ temp sang output_dir"""
+        """Di chuyển các file còn lại từ temp sang output_dir"""
         temp_files = sorted(self.temp_dir.glob(f"{stream_name}_*.mp4"))
         
         if not temp_files:
-            print(f"\n⚠️  Không có file nào trong temp để di chuyển")
             return
         
-        print(f"\n📦 Đang di chuyển {len(temp_files)} file từ temp...")
+        print(f"\n📦 Đang di chuyển {len(temp_files)} file còn lại từ temp...")
         
         moved_count = 0
         for temp_file in temp_files:
@@ -301,7 +321,8 @@ class YouTubeStreamRecorder:
             except Exception as e:
                 print(f"  ✗ Lỗi di chuyển {temp_file.name}: {e}")
         
-        print(f"✓ Đã di chuyển {moved_count}/{len(temp_files)} file")
+        if moved_count > 0:
+            print(f"✓ Đã di chuyển {moved_count}/{len(temp_files)} file")
     
     def list_recordings(self, stream_name=None):
         """Liệt kê các file đã ghi"""

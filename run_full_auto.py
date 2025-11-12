@@ -115,9 +115,9 @@ def main():
     input("Nhấn Enter để bắt đầu...")
     print()
     
-    # Khởi động pipeline trong thread riêng
+    # Khởi động pipeline trong thread riêng (KHÔNG dùng daemon)
     print("🚀 Đang khởi động Auto Processing Pipeline...")
-    pipeline_thread = threading.Thread(target=run_pipeline, daemon=True)
+    pipeline_thread = threading.Thread(target=run_pipeline, daemon=False)
     pipeline_thread.start()
     
     # Đợi pipeline khởi động
@@ -125,15 +125,28 @@ def main():
     print("✅ Pipeline đã sẵn sàng")
     print()
     
-    # Chạy recorder trong main thread
+    # Chạy recorder trong thread riêng
     print("🎥 Đang khởi động Stream Recorder...")
     print("=" * 70)
     print()
     
+    recorder_thread = threading.Thread(target=lambda: run_recorder(youtube_url), daemon=False)
+    recorder_thread.start()
+    
+    # Đợi cả 2 threads
     try:
-        run_recorder(youtube_url)
+        print("💡 Hệ thống đang chạy. Nhấn Ctrl+C để dừng.\n")
+        while recorder_thread.is_alive() or pipeline_thread.is_alive():
+            time.sleep(1)
     except KeyboardInterrupt:
         print("\n\n⏹️  Đang dừng hệ thống...")
+        print("⚠️  Đợi các process hoàn thành...")
+        print("💡 Nhấn Ctrl+C lần nữa để force quit")
+        try:
+            recorder_thread.join(timeout=5)
+            pipeline_thread.join(timeout=5)
+        except KeyboardInterrupt:
+            print("\n⚠️  Force quit!")
         print("✅ Đã dừng")
     except Exception as e:
         print(f"\n❌ Lỗi: {e}")

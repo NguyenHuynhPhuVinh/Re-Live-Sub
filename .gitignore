@@ -5,6 +5,7 @@
 recordings/
 *.mp4
 *.srt
+processed/ 
 
 # Python
 __pycache__/
