@@ -75,67 +75,66 @@ class SubtitleMerger:
         """Burn phụ đề vào video (không thể tắt được)"""
         print(f"\n🔥 Đang burn phụ đề vào video...")
         
-        # Tạo filter string cho subtitle style
-        style_parts = []
+        # Đường dẫn tuyệt đối
+        video_abs = str(video_path.absolute())
+        srt_abs = str(srt_path.absolute())
+        output_abs = str(output_path.absolute())
         
+        # Escape đường dẫn SRT cho subtitles filter trên Windows
+        # Phải escape backslash và dấu hai chấm
+        srt_escaped = srt_abs.replace('\\', '\\\\\\\\').replace(':', '\\\\:')
+        
+        # Tạo filter subtitles (không dùng force_style vì không được hỗ trợ tốt)
+        # Thay vào đó dùng subtitles filter đơn giản
+        vf_filter = f"subtitles={srt_escaped}"
+        
+        # Nếu có custom style, cảnh báo user
         if subtitle_style:
-            if 'font' in subtitle_style:
-                style_parts.append(f"FontName={subtitle_style['font']}")
-            if 'size' in subtitle_style:
-                style_parts.append(f"FontSize={subtitle_style['size']}")
-            if 'color' in subtitle_style:
-                style_parts.append(f"PrimaryColour={subtitle_style['color']}")
-            if 'outline' in subtitle_style:
-                style_parts.append(f"OutlineColour={subtitle_style['outline']}")
-            if 'bold' in subtitle_style and subtitle_style['bold']:
-                style_parts.append("Bold=1")
+            print("⚠️  Lưu ý: Custom style không được hỗ trợ với SRT.")
+            print("    Để tùy chỉnh style, hãy convert SRT sang ASS trước.")
         
-        # Mặc định style nếu không có
-        if not style_parts:
-            style_parts = [
-                "FontName=Arial",
-                "FontSize=24",
-                "PrimaryColour=&H00FFFFFF",  # Trắng
-                "OutlineColour=&H00000000",  # Viền đen
-                "BorderStyle=1",
-                "Outline=2",
-                "Shadow=1"
-            ]
-        
-        style_string = ':'.join(style_parts)
-        
-        # Escape đường dẫn SRT cho Windows
-        srt_path_escaped = str(srt_path).replace('\\', '/').replace(':', '\\:')
-        
-        # FFmpeg command
+        # FFmpeg command - đơn giản hóa
         cmd = [
             'ffmpeg',
-            '-i', str(video_path),
-            '-vf', f"subtitles='{srt_path_escaped}':force_style='{style_string}'",
+            '-i', video_abs,
+            '-vf', vf_filter,
             '-c:a', 'copy',  # Copy audio, không re-encode
+            '-c:v', 'libx264',  # Video codec
+            '-preset', 'fast',  # Encode nhanh hơn
+            '-crf', '23',  # Chất lượng (18-28, thấp hơn = tốt hơn)
             '-y',  # Overwrite output
-            str(output_path)
+            output_abs
         ]
+        
+        print(f"\n🔧 Debug - FFmpeg command:")
+        print(f"   {' '.join(cmd)}\n")
         
         try:
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stderr=subprocess.STDOUT,  # Merge stderr vào stdout
                 text=True
             )
             
-            # Hiển thị progress
-            for line in process.stderr:
+            # Hiển thị output
+            output_lines = []
+            for line in process.stdout:
+                output_lines.append(line)
                 if 'time=' in line:
                     print(f"\r⏳ {line.strip()}", end='', flush=True)
+                elif 'error' in line.lower() or 'invalid' in line.lower():
+                    print(f"\n⚠️  {line.strip()}")
             
             process.wait()
             
             if process.returncode == 0:
                 print(f"\n✓ Đã tạo video có phụ đề: {output_path}")
             else:
-                print(f"\n✗ Lỗi khi xử lý video")
+                print(f"\n✗ Lỗi khi xử lý video (exit code: {process.returncode})")
+                print(f"\nChi tiết lỗi (20 dòng cuối):")
+                for line in output_lines[-20:]:
+                    print(f"  {line.strip()}")
                 
         except Exception as e:
             print(f"\n✗ Lỗi: {e}")
