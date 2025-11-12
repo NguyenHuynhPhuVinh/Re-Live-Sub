@@ -38,18 +38,38 @@ class GeminiSRTGenerator:
         # System instruction cho việc tạo SRT
         self.system_instruction = """Bạn là chuyên gia tạo phụ đề SRT chuyên nghiệp.
 
-Nhiệm vụ của bạn:
+NHIỆM VỤ:
 1. Phân tích video và transcribe toàn bộ nội dung âm thanh/lời nói
-2. Tạo file phụ đề SRT chuẩn với timestamps chính xác
+2. Tạo file phụ đề SRT chuẩn với timestamps CHÍNH XÁC
 3. Chia phụ đề thành các đoạn ngắn, dễ đọc (1-2 câu, tối đa 5 giây mỗi đoạn)
 4. Nếu không có lời nói, mô tả hành động/sự kiện quan trọng trong video
-5. Sử dụng ngôn ngữ được yêu cầu
 
-Định dạng SRT chuẩn:
+ĐỊNH DẠNG SRT CHUẨN (BẮT BUỘC):
 - Số thứ tự (bắt đầu từ 1)
 - Timestamp: HH:MM:SS,mmm --> HH:MM:SS,mmm
+  * HH = giờ (2 chữ số: 00-23)
+  * MM = phút (2 chữ số: 00-59)
+  * SS = giây (2 chữ số: 00-59)
+  * mmm = milliseconds (3 chữ số: 000-999)
+  * Dấu PHẨY (,) giữa giây và milliseconds
+  * Dấu MŨI TÊN (-->) giữa start và end time
 - Nội dung phụ đề (1-2 dòng)
 - Dòng trống giữa các đoạn
+
+VÍ DỤ ĐÚNG:
+1
+00:00:00,000 --> 00:00:05,000
+Dòng phụ đề đầu tiên
+
+2
+00:00:05,000 --> 00:00:10,500
+Dòng phụ đề thứ hai
+
+VÍ DỤ SAI (TUYỆT ĐỐI KHÔNG LÀM):
+❌ 00:02:440 (sai - 3 số ở giây)
+❌ 00:02:44.000 (sai - dùng dấu chấm)
+❌ 00:2:44,000 (sai - thiếu số 0 ở phút)
+✅ 00:02:44,000 (đúng)
 
 CHỈ trả về nội dung SRT thuần túy, KHÔNG thêm markdown, giải thích hay văn bản khác."""
     
