@@ -1,50 +1,76 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
+import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import StreamRecorder from "./components/StreamRecorder";
+import VideoList from "./components/VideoList";
+import { Alert, AlertDescription } from "./components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const [backendStatus, setBackendStatus] = useState<
+    "checking" | "online" | "offline"
+  >("checking");
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  useEffect(() => {
+    checkBackend();
+    const interval = setInterval(checkBackend, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const checkBackend = async () => {
+    try {
+      const isHealthy = await invoke<boolean>("check_backend_health");
+      setBackendStatus(isHealthy ? "online" : "offline");
+    } catch {
+      setBackendStatus("offline");
+    }
+  };
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="container mx-auto p-6">
+        <header className="mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2">
+            🎬 Live Stream Subtitle System
+          </h1>
+          <p className="text-slate-300">
+            Tự động ghi stream, tạo phụ đề và dịch sang tiếng Việt
+          </p>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+          {backendStatus === "offline" && (
+            <Alert className="mt-4 bg-red-500/20 border-red-500">
+              <AlertDescription className="text-red-200">
+                ⚠️ Backend offline. Chạy:{" "}
+                <code className="bg-black/30 px-2 py-1 rounded">
+                  cd backend && python main.py
+                </code>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {backendStatus === "online" && (
+            <div className="mt-4 flex items-center gap-2 text-green-400">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              <span className="text-sm">Backend đang chạy</span>
+            </div>
+          )}
+        </header>
+
+        <Tabs defaultValue="record" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-slate-800/50">
+            <TabsTrigger value="record">📹 Ghi Stream</TabsTrigger>
+            <TabsTrigger value="videos">📁 Video</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="record" className="mt-6">
+            <StreamRecorder backendOnline={backendStatus === "online"} />
+          </TabsContent>
+
+          <TabsContent value="videos" className="mt-6">
+            <VideoList />
+          </TabsContent>
+        </Tabs>
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    </div>
   );
 }
 
