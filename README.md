@@ -8,6 +8,8 @@ Công cụ ghi stream YouTube và tự động tạo phụ đề SRT bằng Gemi
 2. **SRT Generator** (`generate_srt.py`): Tạo file phụ đề SRT từ video bằng Gemini API
 3. **SRT Validator** (`validate_srt.py`): Kiểm tra và sửa lỗi file SRT
 4. **Subtitle Merger** (`merge_subtitle.py`): Ghép phụ đề SRT vào video bằng FFmpeg
+5. **YouTube Live Streamer** (`stream_to_youtube.py`): Phát trực tiếp video lên YouTube Live
+6. **YouTube Uploader** (`upload_youtube.py`): Upload video lên YouTube (private/unlisted/public)
 
 ## Cài đặt
 
@@ -200,6 +202,52 @@ Dòng phụ đề đầu tiên
 2
 00:00:05,000 --> 00:00:10,000
 Dòng phụ đề thứ hai
+```
+
+### 5. Stream Video Lên YouTube Live
+
+**Setup Stream Key:**
+
+1. Vào [YouTube Studio](https://studio.youtube.com)
+2. Chọn **Go Live** → **Stream**
+3. Copy **Stream key** (giữ bí mật!)
+4. Thêm vào file `.env`:
+   ```
+   YOUTUBE_STREAM_KEY=your_stream_key_here
+   ```
+
+**Chạy script:**
+
+```bash
+python stream_to_youtube.py
+```
+
+**Tính năng:**
+
+- Stream 1 video hoặc playlist
+- Loop video/playlist vô hạn
+- Tự động encode phù hợp cho YouTube (1080p, 4.5 Mbps)
+- Stream ở chế độ riêng tư (đổi sang Public trong YouTube Studio)
+
+**Sử dụng trong code:**
+
+```python
+from stream_to_youtube import YouTubeLiveStreamer
+
+streamer = YouTubeLiveStreamer(stream_key="your_key")
+
+# Stream 1 video
+streamer.stream_video(
+    "recordings/test_stream_000_sub.mp4",
+    loop=True  # Loop vô hạn
+)
+
+# Stream playlist
+streamer.stream_playlist(
+    video_dir="recordings",
+    pattern="*_sub.mp4",
+    loop=True  # Loop playlist
+)
 ```
 
 ## Lưu ý
