@@ -93,15 +93,19 @@ class SubtitleMerger:
             print("⚠️  Lưu ý: Custom style không được hỗ trợ với SRT.")
             print("    Để tùy chỉnh style, hãy convert SRT sang ASS trước.")
         
-        # FFmpeg command - đơn giản hóa
+        print("💡 Tip: Quá trình này sẽ mất vài phút tùy độ dài video...")
+        print("    Preset: ultrafast (nhanh nhất, file size lớn hơn)")
+        
+        # FFmpeg command - tối ưu tốc độ
         cmd = [
             'ffmpeg',
             '-i', video_abs,
             '-vf', vf_filter,
             '-c:a', 'copy',  # Copy audio, không re-encode
             '-c:v', 'libx264',  # Video codec
-            '-preset', 'fast',  # Encode nhanh hơn
+            '-preset', 'ultrafast',  # Encode cực nhanh (thay vì 'fast')
             '-crf', '23',  # Chất lượng (18-28, thấp hơn = tốt hơn)
+            '-threads', '0',  # Dùng tất cả CPU cores
             '-y',  # Overwrite output
             output_abs
         ]
