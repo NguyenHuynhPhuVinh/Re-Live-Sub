@@ -88,80 +88,101 @@ export default function StreamRecorder({ backendOnline }: StreamRecorderProps) {
   };
 
   return (
-    <Card className="bg-slate-800/50 border-slate-700">
-      <CardHeader>
-        <CardTitle className="text-white">Ghi Stream YouTube</CardTitle>
-        <CardDescription className="text-slate-400">
-          Nhập link livestream để bắt đầu ghi và tự động tạo phụ đề
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {error && (
-          <Alert className="bg-red-500/20 border-red-500">
-            <AlertDescription className="text-red-200">
-              {error}
-            </AlertDescription>
-          </Alert>
-        )}
+    <div className="space-y-6">
+      {/* URL Input - Prominent at top */}
+      <div className="bg-[#1e1b4b] border-2 border-[#312e81] rounded-lg p-6">
+        <Label
+          htmlFor="url"
+          className="text-white text-lg font-semibold mb-3 block"
+        >
+          URL Stream YouTube
+        </Label>
+        <Input
+          id="url"
+          type="url"
+          placeholder="https://www.youtube.com/watch?v=..."
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          disabled={isRecording || !backendOnline}
+          className="bg-[#0a0e27] border-2 border-[#4c1d95] text-white text-lg h-14 rounded-lg placeholder:text-[#6b7280] focus:border-[#6366f1] transition-colors"
+        />
+      </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="url" className="text-white">
-            URL Stream
-          </Label>
-          <Input
-            id="url"
-            type="url"
-            placeholder="https://www.youtube.com/watch?v=..."
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            disabled={isRecording || !backendOnline}
-            className="bg-slate-900/50 border-slate-600 text-white"
-          />
-        </div>
+      {/* Error Alert */}
+      {error && (
+        <Alert className="bg-[#1e1b4b] border-2 border-[#ef4444]">
+          <AlertDescription className="text-[#fca5a5] font-medium">
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
 
-        <div className="space-y-2">
-          <Label htmlFor="duration" className="text-white">
-            Độ dài mỗi segment (giây)
-          </Label>
-          <Input
-            id="duration"
-            type="number"
-            value={segmentDuration}
-            onChange={(e) => setSegmentDuration(Number(e.target.value))}
-            disabled={isRecording || !backendOnline}
-            className="bg-slate-900/50 border-slate-600 text-white"
-          />
-          <p className="text-sm text-slate-400">
-            {segmentDuration} giây = {Math.floor(segmentDuration / 60)} phút{" "}
-            {segmentDuration % 60} giây
-          </p>
-        </div>
-
-        {status && (
-          <div className="flex items-center gap-2 text-blue-400">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span>{status}</span>
-          </div>
-        )}
-
-        <div className="flex gap-2">
-          {!isRecording ? (
-            <Button
-              onClick={handleStart}
-              disabled={!backendOnline}
-              className="bg-green-600 hover:bg-green-700"
+      {/* Settings Card */}
+      <Card className="bg-[#1e1b4b] border-2 border-[#312e81]">
+        <CardHeader>
+          <CardTitle className="text-white text-xl">Cài Đặt</CardTitle>
+          <CardDescription className="text-[#8b92b0]">
+            Tùy chỉnh thời lượng và các tham số ghi hình
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Duration Setting */}
+          <div className="space-y-3">
+            <Label
+              htmlFor="duration"
+              className="text-white font-medium text-base"
             >
-              <Play className="w-4 h-4 mr-2" />
-              Bắt đầu ghi
-            </Button>
-          ) : (
-            <Button onClick={handleStop} variant="destructive">
-              <Square className="w-4 h-4 mr-2" />
-              Dừng ghi
-            </Button>
+              Thời lượng mỗi segment
+            </Label>
+            <div className="flex items-center gap-4">
+              <Input
+                id="duration"
+                type="number"
+                value={segmentDuration}
+                onChange={(e) => setSegmentDuration(Number(e.target.value))}
+                disabled={isRecording || !backendOnline}
+                className="bg-[#0a0e27] border-2 border-[#4c1d95] text-white h-12 rounded-lg w-32 text-center text-lg font-semibold focus:border-[#6366f1] transition-colors"
+              />
+              <div className="flex-1">
+                <p className="text-[#8b92b0] text-sm">
+                  = {Math.floor(segmentDuration / 60)} phút{" "}
+                  {segmentDuration % 60} giây
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Status Display */}
+          {status && (
+            <div className="flex items-center gap-3 p-4 bg-[#0a0e27] border-2 border-[#3b82f6] rounded-lg">
+              <Loader2 className="w-5 h-5 animate-spin text-[#3b82f6]" />
+              <span className="text-white font-medium">{status}</span>
+            </div>
           )}
-        </div>
-      </CardContent>
-    </Card>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-2">
+            {!isRecording ? (
+              <Button
+                onClick={handleStart}
+                disabled={!backendOnline}
+                className="bg-[#10b981] hover:bg-[#059669] text-white h-12 px-8 rounded-lg font-semibold text-base transition-colors disabled:bg-[#374151] disabled:text-[#6b7280]"
+              >
+                <Play className="w-5 h-5 mr-2" />
+                Bắt Đầu Ghi
+              </Button>
+            ) : (
+              <Button
+                onClick={handleStop}
+                className="bg-[#ef4444] hover:bg-[#dc2626] text-white h-12 px-8 rounded-lg font-semibold text-base transition-colors"
+              >
+                <Square className="w-5 h-5 mr-2" />
+                Dừng Ghi
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
