@@ -62,7 +62,7 @@ def run_pipeline():
     pipeline.start_watching()
 
 
-def run_recorder(youtube_url):
+def run_recorder(youtube_url, segment_duration=30):
     """Chạy stream recorder"""
     from stream_recorder import YouTubeStreamRecorder
     from datetime import datetime
@@ -72,7 +72,7 @@ def run_recorder(youtube_url):
     
     recorder = YouTubeStreamRecorder(
         output_dir="recordings",
-        segment_duration=300,  # 5 phút
+        segment_duration=segment_duration,  # Có thể tùy chỉnh
         enhance_quality=False,  # Copy stream (nhanh)
         use_temp_dir=True  # Dùng temp dir
     )
@@ -98,14 +98,18 @@ def main():
         print("❌ URL không được để trống!")
         sys.exit(1)
     
+    # Tùy chọn segment duration
+    segment_input = input("Segment duration (giây, mặc định 30 cho test): ").strip()
+    segment_duration = int(segment_input) if segment_input else 30
+    
     print()
     print("=" * 70)
-    print("⚙️  CẤU HÌNH MẶC ĐỊNH")
+    print("⚙️  CẤU HÌNH")
     print("=" * 70)
     print("📁 Thư mục temp:      recordings/temp")
-    print("📁 Thư mục output:    recordings")
+    print("�  Thư mục output:    recordings")
     print("📁 Thư mục processed: processed")
-    print("⏱️  Segment duration:  5 phút")
+    print(f"⏱️  Segment duration:  {segment_duration} giây ({segment_duration//60} phút {segment_duration%60} giây)")
     print("🌐 Ngôn ngữ phụ đề:   Tiếng Việt")
     print("🔥 Burn subtitle:     Có")
     print("⚡ Chế độ ghi:        Copy Stream (nhanh)")
@@ -130,7 +134,7 @@ def main():
     print("=" * 70)
     print()
     
-    recorder_thread = threading.Thread(target=lambda: run_recorder(youtube_url), daemon=False)
+    recorder_thread = threading.Thread(target=lambda: run_recorder(youtube_url, segment_duration), daemon=False)
     recorder_thread.start()
     
     # Đợi cả 2 threads

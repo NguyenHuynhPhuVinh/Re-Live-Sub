@@ -8,6 +8,7 @@ import os
 import time
 import json
 import shutil
+import threading
 from datetime import datetime
 from pathlib import Path
 
@@ -226,11 +227,59 @@ class YouTubeStreamRecorder:
             text=True
         )
         
-        # Monitor output
+        # Monitor output và theo dõi file trong temp
         segment_count = start_number
         last_output_time = time.time()
         stream_error = False
         user_interrupted = False
+        last_moved_segment = start_number - 1
+        
+        # Thread để theo dõi và di chuyển file
+        def monitor_and_move_files():
+            nonlocal last_moved_segment
+            while process.poll() is None:  # Chạy khi process còn sống
+                try:
+                    # Tìm các file segment trong temp
+                    temp_files = sorted(self.temp_dir.glob(f"{stream_name}_*.mp4"))
+                    
+                    for temp_file in temp_files:
+                        # Lấy segment number từ tên file
+                        try:
+                            seg_num = int(temp_file.stem.split('_')[-1])
+                        except:
+                            continue
+                        
+                        # Chỉ di chuyển file đã hoàn thành (không phải file đang ghi)
+                        if seg_num > last_moved_segment:
+                            # Kiểm tra file có đang được ghi không (size thay đổi)
+                            size1 = temp_file.stat().st_size
+                            time.sleep(2)
+                            
+                            # Kiểm tra lại xem file còn tồn tại không
+                            if not temp_file.exists():
+                                continue
+                            
+                            size2 = temp_file.stat().st_size
+                            
+                            # Nếu size không đổi trong 2s, file đã hoàn thành
+                            if size1 == size2 and size1 > 0:
+                                try:
+                                    dest_file = self.output_dir / temp_file.name
+                                    shutil.move(str(temp_file), str(dest_file))
+                                    print(f"\n📦 Di chuyển: {temp_file.name} → recordings/")
+                                    last_moved_segment = seg_num
+                                except Exception as e:
+                                    print(f"\n⚠️  Lỗi di chuyển {temp_file.name}: {e}")
+                    
+                    time.sleep(3)  # Check mỗi 3 giây
+                except Exception as e:
+                    print(f"\n⚠️  Lỗi monitor: {e}")
+                    time.sleep(3)
+        
+        # Chỉ chạy monitor thread nếu dùng temp_dir
+        if self.use_temp_dir:
+            monitor_thread = threading.Thread(target=monitor_and_move_files, daemon=True)
+            monitor_thread.start()
         
         try:
             for line in process.stderr:
@@ -238,14 +287,9 @@ class YouTubeStreamRecorder:
                 if attempt_number == 0 or 'error' in line.lower():
                     print(f"[FFmpeg] {line.strip()}")
                 
-                if 'segment:' in line.lower() or 'Opening' in line:
-                    segment_count += 1
-                    print(f"✓ Đã tạo segment #{segment_count}")
+                # Đếm segment từ output pattern
+                if 'Opening' in line or 'segment' in line.lower():
                     last_output_time = time.time()
-                    
-                    # Di chuyển segment vừa hoàn thành từ temp ra output (nếu dùng temp)
-                    if self.use_temp_dir and segment_count > 0:
-                        self._move_completed_segment(stream_name, segment_count - 1)
                 
                 # Check for connection errors
                 if any(err in line.lower() for err in ['connection', 'timeout', 'i/o error', 'server returned']):
@@ -256,6 +300,10 @@ class YouTubeStreamRecorder:
                 if 'error' in line.lower() or 'failed' in line.lower():
                     if 'error' in line.lower():
                         stream_error = True
+                
+                # Update last output time khi có activity
+                if 'time=' in line or 'frame=' in line:
+                    last_output_time = time.time()
                 
                 # Timeout detection: không có output trong 30s
                 if time.time() - last_output_time > 30:
@@ -284,23 +332,6 @@ class YouTubeStreamRecorder:
             return False
         else:
             return True
-    
-    def _move_completed_segment(self, stream_name, segment_number):
-        """Di chuyển một segment đã hoàn thành từ temp ra output"""
-        segment_file = self.temp_dir / f"{stream_name}_{segment_number:03d}.mp4"
-        
-        if not segment_file.exists():
-            return
-        
-        # Đợi file ổn định (1 giây)
-        time.sleep(1)
-        
-        try:
-            dest_file = self.output_dir / segment_file.name
-            shutil.move(str(segment_file), str(dest_file))
-            print(f"  📦 Di chuyển: {segment_file.name} → recordings/")
-        except Exception as e:
-            print(f"  ⚠️  Lỗi di chuyển {segment_file.name}: {e}")
     
     def move_from_temp_to_output(self, stream_name):
         """Di chuyển các file còn lại từ temp sang output_dir"""
