@@ -25,15 +25,18 @@ class YouTubeStreamRecorder:
     def get_stream_url(self, youtube_url):
         """Lấy direct stream URL từ YouTube"""
         try:
+            # Chọn format tốt nhất: video + audio chất lượng cao nhất
+            # bestvideo+bestaudio = chọn video và audio tốt nhất rồi merge
+            # best = chọn stream đã merge sẵn tốt nhất
             cmd = [
                 'yt-dlp',
-                '-f', 'best',  # Chọn chất lượng tốt nhất
+                '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
                 '-g',  # Chỉ lấy URL, không download
                 youtube_url
             ]
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             stream_url = result.stdout.strip()
-            print(f"✓ Đã lấy stream URL")
+            print(f"✓ Đã lấy stream URL (chất lượng cao nhất)")
             return stream_url
         except subprocess.CalledProcessError as e:
             print(f"✗ Lỗi khi lấy stream URL: {e.stderr}")
