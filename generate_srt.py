@@ -172,12 +172,6 @@ Tạo phụ đề chuyên nghiệp như một fansub Hololive thực thụ!"""
         # Cấu hình generate content
         generate_content_config = types.GenerateContentConfig(
             temperature=0.7,
-            thinking_config=types.ThinkingConfig(
-                thinking_budget=-1,
-            ),
-            image_config=types.ImageConfig(
-                image_size="1K",
-            ),
             system_instruction=[
                 types.Part.from_text(text=self.system_instruction),
             ],
